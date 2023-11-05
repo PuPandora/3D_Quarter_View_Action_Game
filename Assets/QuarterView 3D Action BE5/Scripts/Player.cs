@@ -9,6 +9,17 @@ public class Player : MonoBehaviour
     private bool vDown;
     private Vector3 moveVec;
 
+    // Player Status
+    public int ammo;
+    public int coin;
+    public int health = 100;
+    public int hasGrenades;
+    [Space(10f)]
+    public int maxAmmo = 999;
+    public int maxCoin = 99999;
+    public int maxHealth = 100;
+    public int maxHasGrenades = 4;
+
     // Jump
     private bool jDown;
     private float jumpPower = 15f;
@@ -22,13 +33,15 @@ public class Player : MonoBehaviour
     private GameObject nearObject;
     private bool iDown;
     public GameObject[] weapons;
+    public GameObject[] grenades;
     private GameObject equipWeapon;
+    private int equipWeaponIndex = -1;
     public bool[] hasWeapons;
+
     private bool sDown1;
     private bool sDown2;
     private bool sDown3;
     private bool isSwap;
-    private int equipWeaponIndex = -1;
 
     // Component
     Animator anim;
@@ -203,6 +216,55 @@ public class Player : MonoBehaviour
         {
             anim.SetBool("isJump", false);
             isJump = false;
+        }
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        // 아이템 획득
+        if (other.CompareTag("Item"))
+        {
+            Item item = other.GetComponent<Item>();
+            switch (item.type)
+            {
+                case Item.EType.Ammo:
+                    ammo += item.value;
+
+                    if (ammo > maxAmmo)
+                    {
+                        ammo = maxAmmo;
+                    }
+                    break;
+
+                case Item.EType.Coin:
+                    coin += item.value;
+
+                    if (coin > maxCoin)
+                    {
+                        coin = maxCoin;
+                    }
+                    break;
+
+                case Item.EType.Grenade:
+                    if (hasGrenades >= maxHasGrenades)
+                    {
+                        hasGrenades = maxHasGrenades;
+                        return;
+                    }
+                    grenades[hasGrenades].SetActive(true);
+                    hasGrenades += item.value;
+                    break;
+
+                case Item.EType.Heart:
+                    health += item.value;
+
+                    if (health > maxHealth)
+                    {
+                        health = maxHealth;
+                    }
+                    break;
+            }
+            Destroy(other.gameObject);
         }
     }
 
