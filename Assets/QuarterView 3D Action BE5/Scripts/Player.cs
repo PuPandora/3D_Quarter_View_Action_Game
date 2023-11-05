@@ -2,6 +2,11 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    // Important
+    Animator anim;
+    Rigidbody rigid;
+    public Camera followCamera;
+
     // Move
     public float speed = 15f;
     private float hAxis;
@@ -45,16 +50,14 @@ public class Player : MonoBehaviour
     private bool sDown2; // Swap 2
     private bool sDown3; // Swap 3
     private bool fDown; // Fire
+    private bool rDown; // Relaod
 
     // State
     private bool isDodge;
     private bool isJump;
     private bool isSwap;
     private bool isFireReady = true;
-
-    // Component
-    Animator anim;
-    Rigidbody rigid;
+    private bool isReload;
 
     void Awake()
     {
@@ -69,6 +72,7 @@ public class Player : MonoBehaviour
         Turn();
         Jump();
         Attack();
+        Reload();
         Dodge();
         Swap();
         Interaction();
@@ -87,8 +91,9 @@ public class Player : MonoBehaviour
         sDown1 = Input.GetButtonDown("Swap1");
         sDown2 = Input.GetButtonDown("Swap2");
         sDown3 = Input.GetButtonDown("Swap3");
-        // Attack
-        fDown = Input.GetButtonDown("Fire1");
+        // Battle
+        fDown = Input.GetButton("Fire1");
+        rDown = Input.GetButtonDown("Reload");
     }
 
     private void Move()
@@ -100,7 +105,7 @@ public class Player : MonoBehaviour
         }
 
         // 교체 OR 공격 중 이동 불가
-        if (isSwap || !isFireReady)
+        if (isSwap || isReload || !isFireReady)
         {
             moveVec = Vector3.zero;
         }
@@ -113,7 +118,22 @@ public class Player : MonoBehaviour
 
     private void Turn()
     {
+        // 키보드에 의한 회전
         transform.LookAt(transform.position + moveVec);
+
+        // 마우스에 의한 회전
+        Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
+        RaycastHit rayHit;
+
+        if (fDown)
+        {
+            if (Physics.Raycast(ray, out rayHit, 100))
+            {
+                Vector3 nextVec = rayHit.point - transform.position;
+                nextVec.y = 0;
+                transform.LookAt(transform.position + nextVec);
+            }
+        }
     }
 
     private void Jump()
@@ -143,8 +163,8 @@ public class Player : MonoBehaviour
         fireDelay += Time.deltaTime;
         isFireReady = equipWeapon.rate <= fireDelay;
 
-        // 회피, 교체 중에는 공격 불가
-        if (isDodge && isSwap)
+        // 회피, 교체, 재장전 중에는 공격 불가
+        if (isDodge || isSwap || isReload)
         {
             return;
         }
@@ -153,14 +173,58 @@ public class Player : MonoBehaviour
         if (fDown && isFireReady)
         {
             equipWeapon.Use();
-            anim.SetTrigger("doSwing");
+            // 근접 무기면 doSwing, 원거리 무기면 doShot
+            anim.SetTrigger(equipWeapon.type == Weapon.EType.Melee ? "doSwing" : "doShot");
             fireDelay = 0;
         }
     }
 
+    private void Reload()
+    {
+        if (equipWeapon == null)
+        {
+            return;
+        }
+
+        if (equipWeapon.type == Weapon.EType.Melee)
+        {
+            return;
+        }
+
+        if (isJump || isDodge || isSwap || !isFireReady || isReload)
+        {
+            return;
+        }
+
+        if (ammo <= 0)
+        {
+            return;
+        }
+
+        if (rDown)
+        {
+            anim.SetTrigger("doReload");
+            isReload = true;
+
+            Invoke(nameof(ReloadOut), 0.5f);
+        }
+    }
+
+    private void ReloadOut()
+    {
+        // 탄약 소모
+        // 소지 중인 탄약 총의 최대 탄약 수 보다 적다면 그만큼만 탄약 충전
+        int reAmmo = ammo < equipWeapon.maxAmmo ? ammo : equipWeapon.maxAmmo;
+        equipWeapon.curAmmo = reAmmo;
+        ammo -= reAmmo;
+
+        isReload = false;
+    }
+
     private void Dodge()
     {
-        if (isJump || isDodge)
+        // 점프, 회피, 재장전 중에는 회피 불가
+        if (isJump || isDodge || isReload)
         {
             return;
         }
@@ -190,7 +254,8 @@ public class Player : MonoBehaviour
         else if (sDown2 && (!hasWeapons[1] || equipWeaponIndex == 1)) return;
         else if (sDown3 && (!hasWeapons[2] || equipWeaponIndex == 2)) return;
 
-        if (isJump || isDodge)
+        // 점프, 회피, 재장전 중에는 교체 불가
+        if (isJump || isDodge || isReload)
         {
             return;
         }
