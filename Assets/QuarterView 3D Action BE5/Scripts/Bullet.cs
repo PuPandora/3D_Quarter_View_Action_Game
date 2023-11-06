@@ -12,8 +12,11 @@ public class Bullet : MonoBehaviour
         {
             Destroy(gameObject, 3);
         }
+    }
 
-        else if (collision.gameObject.CompareTag("Wall"))
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("Wall"))
         {
             Destroy(gameObject);
         }
