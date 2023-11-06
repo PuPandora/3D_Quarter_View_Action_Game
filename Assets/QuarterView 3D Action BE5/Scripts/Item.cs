@@ -9,8 +9,26 @@ public class Item : MonoBehaviour
     public int value;
     public float rotateSpeed = 50f;
 
+    Rigidbody rigid;
+    SphereCollider sphereCollider;
+
+    void Awake()
+    {
+        rigid = GetComponent<Rigidbody>();
+        sphereCollider = GetComponent<SphereCollider>();
+    }
+
     void Update()
     {
         transform.Rotate(Vector3.up * rotateSpeed * Time.deltaTime);
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Floor"))
+        {
+            rigid.isKinematic = true;
+            sphereCollider.enabled = false;
+        }
     }
 }

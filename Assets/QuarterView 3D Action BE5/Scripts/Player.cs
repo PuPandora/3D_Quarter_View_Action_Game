@@ -58,6 +58,7 @@ public class Player : MonoBehaviour
     private bool isSwap;
     private bool isFireReady = true;
     private bool isReload;
+    private bool isBorder;
 
     void Awake()
     {
@@ -104,13 +105,17 @@ public class Player : MonoBehaviour
             moveVec = dodgeVec;
         }
 
-        // 교체 OR 공격 중 이동 불가
-        if (isSwap || isReload || !isFireReady)
+        // 교체, 공격, 재장전 중 이동 불가
+        if (isSwap || isReload || !isFireReady) 
         {
             moveVec = Vector3.zero;
         }
 
-        transform.position += moveVec * speed * (vDown ? 0.3f : 1f) * Time.deltaTime;
+        // 앞에 벽이 있다면 이동 제한
+        if (!isBorder)
+        {
+            transform.position += moveVec * speed * (vDown ? 0.3f : 1f) * Time.deltaTime;
+        }
 
         anim.SetBool("isRun", moveVec != Vector3.zero);
         anim.SetBool("isWalk", vDown);
@@ -310,6 +315,24 @@ public class Player : MonoBehaviour
         }
     }
 
+    private void FreezeRotation()
+    {
+        // 회전 방지
+        rigid.angularVelocity = Vector3.zero;
+    }
+
+    private void StopToWall()
+    {
+        Debug.DrawRay(transform.position, transform.forward * 5, Color.green);
+        isBorder = Physics.Raycast(transform.position, transform.forward, 5, LayerMask.GetMask("Wall"));
+    }
+
+    void FixedUpdate()
+    {
+        FreezeRotation();
+        StopToWall();
+    }
+
     void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Floor"))
@@ -375,7 +398,6 @@ public class Player : MonoBehaviour
             nearObject = other.gameObject;
             Debug.Log(nearObject);
         }
-
     }
 
     void OnTriggerExit(Collider other)
