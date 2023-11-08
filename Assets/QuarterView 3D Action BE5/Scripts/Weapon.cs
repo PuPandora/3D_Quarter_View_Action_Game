@@ -24,8 +24,8 @@ public class Weapon : MonoBehaviour
     {
         if (type == EType.Melee)
         {
-            StopCoroutine(nameof(Swing));
-            StartCoroutine(nameof(Swing));
+            StopCoroutine(Swing());
+            StartCoroutine(Swing());
         }
 
         else if (type == EType.Range)

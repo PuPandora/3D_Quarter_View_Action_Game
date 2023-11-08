@@ -35,6 +35,7 @@ public class Player : MonoBehaviour
     private GameObject nearObject;
     public GameObject[] weapons;
     public GameObject[] grenades;
+    public GameObject grenadeObj;
     private Weapon equipWeapon;
     private int equipWeaponIndex = -1;
     public bool[] hasWeapons;
@@ -51,6 +52,7 @@ public class Player : MonoBehaviour
     private bool sDown3; // Swap 3
     private bool fDown; // Fire
     private bool rDown; // Relaod
+    private bool gDown; // Grenade
 
     // State
     private bool isDodge;
@@ -72,6 +74,7 @@ public class Player : MonoBehaviour
         Move();
         Turn();
         Jump();
+        Grenade();
         Attack();
         Reload();
         Dodge();
@@ -95,6 +98,7 @@ public class Player : MonoBehaviour
         // Battle
         fDown = Input.GetButton("Fire1");
         rDown = Input.GetButtonDown("Reload");
+        gDown = Input.GetButtonDown("Fire2");
     }
 
     private void Move()
@@ -155,6 +159,36 @@ public class Player : MonoBehaviour
             anim.SetBool("isJump", true);
             anim.SetTrigger("doJump");
             isJump = true;
+        }
+    }
+
+    private void Grenade()
+    {
+        if (hasGrenades <= 0)
+        {
+            return;
+        }
+
+        // 수류탄 사용이 가능한 상황
+        if (gDown && !isReload && !isSwap)
+        {
+            Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
+            RaycastHit rayHit;
+
+            if (Physics.Raycast(ray, out rayHit, 100))
+            {
+                Vector3 nextVec = rayHit.point - transform.position;
+                nextVec.y = 10;
+
+                // 수류탄 투척
+                GameObject instantGrenade = Instantiate(grenadeObj, transform.position, transform.rotation);
+                Rigidbody rigidGrenade = instantGrenade.GetComponent<Rigidbody>();
+                rigidGrenade.AddForce(nextVec, ForceMode.Impulse);
+                rigidGrenade.AddTorque(Vector3.back * 10, ForceMode.Impulse);
+
+                hasGrenades--;
+                grenades[hasGrenades].SetActive(false);
+            }
         }
     }
 
@@ -256,8 +290,8 @@ public class Player : MonoBehaviour
     {
         // 해당 무기가 없거나 이미 장착 중이라면 return
         if (sDown1 && (!hasWeapons[0] || equipWeaponIndex == 0)) return;
-        else if (sDown2 && (!hasWeapons[1] || equipWeaponIndex == 1)) return;
-        else if (sDown3 && (!hasWeapons[2] || equipWeaponIndex == 2)) return;
+        if (sDown2 && (!hasWeapons[1] || equipWeaponIndex == 1)) return;
+        if (sDown3 && (!hasWeapons[2] || equipWeaponIndex == 2)) return;
 
         // 점프, 회피, 재장전 중에는 교체 불가
         if (isJump || isDodge || isReload)
