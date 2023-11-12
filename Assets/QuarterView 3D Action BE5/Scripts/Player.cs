@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -6,6 +7,7 @@ public class Player : MonoBehaviour
     Animator anim;
     Rigidbody rigid;
     public Camera followCamera;
+    MeshRenderer[] meshs;
 
     // Move
     public float speed = 15f;
@@ -61,11 +63,13 @@ public class Player : MonoBehaviour
     private bool isFireReady = true;
     private bool isReload;
     private bool isBorder;
+    private bool isDamage;
 
     void Awake()
     {
         rigid = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
+        meshs = GetComponentsInChildren<MeshRenderer>();
     }
 
     void Update()
@@ -423,6 +427,37 @@ public class Player : MonoBehaviour
             }
             Destroy(other.gameObject);
         }
+
+        else if (other.CompareTag("EnemyBullet"))
+        {
+            if (!isDamage)
+            {
+                Bullet enemyBullet = other.GetComponent<Bullet>();
+                health -= enemyBullet.damage;
+                if (other.GetComponentInChildren<Missile>() != null)
+                {
+                    Destroy(other.gameObject);
+                }
+                StartCoroutine(OnDamage());
+            }
+        }
+    }
+
+    private IEnumerator OnDamage()
+    {
+        foreach (MeshRenderer mesh in meshs)
+        {
+            mesh.material.color = Color.yellow;
+        }
+        isDamage = true;
+
+        yield return new WaitForSeconds(1f);
+
+        foreach (MeshRenderer mesh in meshs)
+        {
+            mesh.material.color = Color.white;
+        }
+        isDamage = false;
     }
 
     void OnTriggerStay(Collider other)
