@@ -6,11 +6,17 @@ public class Bullet : MonoBehaviour
 {
     public int damage;
     public bool isMelee;
+    public bool isRock;
 
     void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Floor"))
         {
+            if (isRock)
+            {
+                return;
+            }
+
             Destroy(gameObject, 3);
         }
     }

@@ -427,29 +427,40 @@ public class Player : MonoBehaviour
             }
             Destroy(other.gameObject);
         }
-
+        
+        // 적 총알 피격
         else if (other.CompareTag("EnemyBullet"))
         {
             if (!isDamage)
             {
                 Bullet enemyBullet = other.GetComponent<Bullet>();
                 health -= enemyBullet.damage;
-                if (other.GetComponentInChildren<Missile>() != null)
-                {
-                    Destroy(other.gameObject);
-                }
-                StartCoroutine(OnDamage());
+
+                bool isBossAtk = other.name.Equals("Boss Melee Area");
+                StartCoroutine(OnDamage(isBossAtk));
+
+            }
+
+            // Rigidbody가 있다면 (미사일인 경우 OR 보스 패턴)
+            if (other.GetComponent<Rigidbody>() != null)
+            {
+                Destroy(other.gameObject);
             }
         }
     }
 
-    private IEnumerator OnDamage()
+    private IEnumerator OnDamage(bool isBossAtk)
     {
         foreach (MeshRenderer mesh in meshs)
         {
             mesh.material.color = Color.yellow;
         }
         isDamage = true;
+
+        if (isBossAtk)
+        {
+            rigid.AddForce(transform.forward * -25, ForceMode.Impulse);
+        }
 
         yield return new WaitForSeconds(1f);
 
@@ -458,6 +469,11 @@ public class Player : MonoBehaviour
             mesh.material.color = Color.white;
         }
         isDamage = false;
+
+        if (isBossAtk)
+        {
+            rigid.velocity = Vector3.zero;
+        }
     }
 
     void OnTriggerStay(Collider other)
