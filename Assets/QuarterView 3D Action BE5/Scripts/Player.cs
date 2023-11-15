@@ -64,6 +64,7 @@ public class Player : MonoBehaviour
     private bool isReload;
     private bool isBorder;
     private bool isDamage;
+    private bool isShop;
 
     void Awake()
     {
@@ -206,8 +207,8 @@ public class Player : MonoBehaviour
         fireDelay += Time.deltaTime;
         isFireReady = equipWeapon.rate <= fireDelay;
 
-        // 회피, 교체, 재장전 중에는 공격 불가
-        if (isDodge || isSwap || isReload)
+        // 회피, 교체, 재장전, 상점 이용 중 공격 불가
+        if (isDodge || isSwap || isReload || isShop)
         {
             return;
         }
@@ -350,6 +351,15 @@ public class Player : MonoBehaviour
 
                 Destroy(nearObject);
             }
+
+            // 상점
+            else if (nearObject.CompareTag("Shop"))
+            {
+                Debug.Log("플레이어 상점 입장");
+                Shop shop = nearObject.GetComponent<Shop>();
+                shop.Enter(this);
+                isShop = true;
+            }
         }
     }
 
@@ -478,10 +488,9 @@ public class Player : MonoBehaviour
 
     void OnTriggerStay(Collider other)
     {
-        if (other.CompareTag("Weapon"))
+        if (other.CompareTag("Weapon") || other.CompareTag("Shop"))
         {
             nearObject = other.gameObject;
-            Debug.Log(nearObject);
         }
     }
 
@@ -490,6 +499,14 @@ public class Player : MonoBehaviour
         if (other.CompareTag("Weapon"))
         {
             nearObject = null;
+        }
+
+        else if (other.CompareTag("Shop"))
+        {
+            Shop shop = nearObject.GetComponent<Shop>();
+            shop.Exit();
+            nearObject = null;
+            isShop = false;
         }
     }
 }
