@@ -31,6 +31,8 @@ public class Player : MonoBehaviour
     public int maxCoin = 99999;
     public int maxHealth = 100;
     public int maxHasGrenades = 4;
+    [Space(10f)]
+    public int score;
 
     // Item
     [Space(20f)]
@@ -38,7 +40,7 @@ public class Player : MonoBehaviour
     public GameObject[] weapons;
     public GameObject[] grenades;
     public GameObject grenadeObj;
-    private Weapon equipWeapon;
+    public Weapon equipWeapon;
     private int equipWeaponIndex = -1;
     public bool[] hasWeapons;
 
@@ -71,6 +73,9 @@ public class Player : MonoBehaviour
         rigid = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
         meshs = GetComponentsInChildren<MeshRenderer>();
+
+        Debug.Log(PlayerPrefs.GetInt("MaxScore"));
+        PlayerPrefs.SetInt("MaxScore", 112500);
     }
 
     void Update()
@@ -256,11 +261,14 @@ public class Player : MonoBehaviour
 
     private void ReloadOut()
     {
+        // 필요한 만큼만 총알 소모
+        int reloadAmount = equipWeapon.maxAmmo - equipWeapon.curAmmo;
+        ammo -= reloadAmount;
+
         // 탄약 소모
         // 소지 중인 탄약 총의 최대 탄약 수 보다 적다면 그만큼만 탄약 충전
         int reAmmo = ammo < equipWeapon.maxAmmo ? ammo : equipWeapon.maxAmmo;
         equipWeapon.curAmmo = reAmmo;
-        ammo -= reAmmo;
 
         isReload = false;
     }
