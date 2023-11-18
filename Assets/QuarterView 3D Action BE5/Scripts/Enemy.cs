@@ -10,9 +10,12 @@ public class Enemy : MonoBehaviour
 
     public int maxHealth;
     public int curHealth;
+    public int score;
+    public GameManager manager;
     public Transform target;
     public BoxCollider meleeArea;
     public GameObject bullet;
+    public GameObject[] coins;
     public bool isChase;
     public bool isAttack;
     public bool isDead;
@@ -31,10 +34,10 @@ public class Enemy : MonoBehaviour
         nav = GetComponent<NavMeshAgent>();
         anim = GetComponentInChildren<Animator>();
 
-        //if (enemyType != EType.D)
-        //{
-        //    Invoke(nameof(ChaseStart), 2);
-        //}
+        if (enemyType != EType.D)
+        {
+            Invoke(nameof(ChaseStart), 2);
+        }
     }
 
     private void ChaseStart()
@@ -64,7 +67,7 @@ public class Enemy : MonoBehaviour
 
     private void Targeting()
     {
-        if (isDead && enemyType == EType.D)
+        if (isDead || enemyType == EType.D)
         {
             return;
         }
@@ -83,7 +86,7 @@ public class Enemy : MonoBehaviour
                 targetRange = 12f;
                 break;
             case EType.C:
-                targetRadius = 0.25f;
+                targetRadius = 0.5f;
                 targetRange = 25f;
                 break;
         }
@@ -134,7 +137,7 @@ public class Enemy : MonoBehaviour
             case EType.C:
                 // 미사일
                 yield return new WaitForSeconds(0.5f);
-                GameObject instantBullet = Instantiate(bullet, transform.position, transform.rotation);
+                GameObject instantBullet = Instantiate(bullet, transform.position + Vector3.up * 2, transform.rotation);
                 Rigidbody rigidBullet = instantBullet.GetComponent<Rigidbody>();
                 rigidBullet.velocity = transform.forward * 20;
 
@@ -161,7 +164,7 @@ public class Enemy : MonoBehaviour
             curHealth -= weapon.damage;
             Vector3 reactVec = transform.position - other.transform.position;
 
-            StartCoroutine(OnDamage(reactVec, true));
+            StartCoroutine(OnDamage(reactVec, false));
         }
         else if (other.CompareTag("Bullet"))
         {
@@ -183,32 +186,57 @@ public class Enemy : MonoBehaviour
 
     private IEnumerator OnDamage(Vector3 reactVec, bool isGrenade)
     {
+        // 중복 방지
+        if (isDead)
+        {
+            yield break;
+        }
+
+        // 피격 시
         foreach (MeshRenderer mesh in meshs)
         {
             mesh.material.color = Color.red;
         }
-        yield return new WaitForSeconds(0.1f);
 
-        if (curHealth > 0)
+        // 피격 받고 체력이 0 이하일 경우
+        if (curHealth <= 0)
         {
-            foreach (MeshRenderer mesh in meshs)
-            {
-                mesh.material.color = Color.white;
-            }
-        }
-        // 사망
-        else
-        {
-            foreach (MeshRenderer mesh in meshs)
-            {
-                mesh.material.color = Color.gray;
-            }
             gameObject.layer = 14;
+            if (meleeArea != null)
+            {
+                meleeArea.enabled = false;
+            }
             isDead = true;
             isChase = false;
             nav.enabled = false;
             anim.SetTrigger("doDie");
 
+            foreach (MeshRenderer mesh in meshs)
+            {
+                mesh.material.color = Color.gray;
+            }
+
+            // 플레이어 점수 증가 및 코인 드랍
+            Player player = target.GetComponent<Player>();
+            player.score += score;
+            int ranCoin = Random.Range(0, 3);
+            Instantiate(coins[ranCoin], transform.position + Vector3.up * 2.5f, Quaternion.identity);
+
+            switch (enemyType)
+            {
+                case EType.A:
+                    manager.enemyCntA--;
+                    break;
+                case EType.B:
+                    manager.enemyCntB--;
+                    break;
+                case EType.C:
+                    manager.enemyCntC--;
+                    break;
+                case EType.D:
+                    manager.enemyCntD--;
+                    break;
+            }
             // 넉백
             // 수류탄
             if (isGrenade)
@@ -228,9 +256,17 @@ public class Enemy : MonoBehaviour
                 rigid.AddForce(reactVec * 5, ForceMode.Impulse);
             }
 
-            if (enemyType != EType.D)
+            Destroy(gameObject, 4);
+        }
+
+        yield return new WaitForSeconds(0.1f);
+
+        // 죽지 않았을 때
+        if (!isDead)
+        {
+            foreach (MeshRenderer mesh in meshs)
             {
-                Destroy(gameObject, 4);
+                mesh.material.color = Color.white;
             }
         }
     }

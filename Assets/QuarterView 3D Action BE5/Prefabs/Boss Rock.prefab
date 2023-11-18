@@ -133,7 +133,7 @@ GameObject:
   - component: {fileID: 6479314902473379428}
   m_Layer: 15
   m_Name: Mesh Object
-  m_TagString: Untagged
+  m_TagString: EnemyBullet
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

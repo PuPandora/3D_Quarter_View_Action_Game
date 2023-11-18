@@ -46,10 +46,10 @@ public class Weapon : MonoBehaviour
         yield return new WaitForSeconds(0.1f);
         trailEffect.emitting = true;
 
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(0.1f);
         meleeArea.enabled = true;
 
-        yield return new WaitForSeconds(0.05f);
+        yield return new WaitForSeconds(0.08f);
         meleeArea.enabled = false;
         trailEffect.emitting = false;
 

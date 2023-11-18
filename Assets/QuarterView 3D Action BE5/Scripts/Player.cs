@@ -8,6 +8,7 @@ public class Player : MonoBehaviour
     Rigidbody rigid;
     public Camera followCamera;
     MeshRenderer[] meshs;
+    public GameManager manager;
 
     // Move
     public float speed = 15f;
@@ -67,15 +68,13 @@ public class Player : MonoBehaviour
     private bool isBorder;
     private bool isDamage;
     private bool isShop;
+    private bool isDead;
 
     void Awake()
     {
         rigid = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
         meshs = GetComponentsInChildren<MeshRenderer>();
-
-        Debug.Log(PlayerPrefs.GetInt("MaxScore"));
-        PlayerPrefs.SetInt("MaxScore", 112500);
     }
 
     void Update()
@@ -119,8 +118,8 @@ public class Player : MonoBehaviour
             moveVec = dodgeVec;
         }
 
-        // 교체, 공격, 재장전 중 이동 불가
-        if (isSwap || isReload || !isFireReady) 
+        // 교체, 공격, 재장전, 사망 시 이동 불가
+        if (isSwap || isReload || !isFireReady || isDead) 
         {
             moveVec = Vector3.zero;
         }
@@ -137,6 +136,12 @@ public class Player : MonoBehaviour
 
     private void Turn()
     {
+        // 사망시 회전 제한
+        if (isDead)
+        {
+            return;
+        }
+
         // 키보드에 의한 회전
         transform.LookAt(transform.position + moveVec);
 
@@ -157,7 +162,8 @@ public class Player : MonoBehaviour
 
     private void Jump()
     {
-        if (isJump || isDodge)
+        // 점프, 회피, 교체, 재장전, 사망 시 점프 불가
+        if (isJump || isDodge || isSwap || isReload || isDead)
         {
             return;
         }
@@ -174,13 +180,19 @@ public class Player : MonoBehaviour
 
     private void Grenade()
     {
+        // 재장전, 교체, 사망 시 수류탄 샤용 불가
+        if (isReload || isSwap || isDead)
+        {
+            return;
+        }
+
         if (hasGrenades <= 0)
         {
             return;
         }
 
-        // 수류탄 사용이 가능한 상황
-        if (gDown && !isReload && !isSwap)
+        // 수류탄 키 입력
+        if (gDown)
         {
             Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit rayHit;
@@ -212,8 +224,8 @@ public class Player : MonoBehaviour
         fireDelay += Time.deltaTime;
         isFireReady = equipWeapon.rate <= fireDelay;
 
-        // 회피, 교체, 재장전, 상점 이용 중 공격 불가
-        if (isDodge || isSwap || isReload || isShop)
+        // 회피, 교체, 재장전, 상점 이용, 사망 시 공격 불가
+        if (isDodge || isSwap || isReload || isShop || isDead)
         {
             return;
         }
@@ -240,16 +252,19 @@ public class Player : MonoBehaviour
             return;
         }
 
-        if (isJump || isDodge || isSwap || !isFireReady || isReload)
+        // 점프, 회피, 교체, 쏠 수 없을 때, 재장전 중, 사망 시 재장전 불가
+        if (isJump || isDodge || isSwap || !isFireReady || isReload || isDead)
         {
             return;
         }
 
+        // 탄약이 있을 때만
         if (ammo <= 0)
         {
             return;
         }
 
+        // 재장전 키 입력
         if (rDown)
         {
             anim.SetTrigger("doReload");
@@ -275,8 +290,8 @@ public class Player : MonoBehaviour
 
     private void Dodge()
     {
-        // 점프, 회피, 재장전 중에는 회피 불가
-        if (isJump || isDodge || isReload)
+        // 점프, 회피, 재장전, 사망 시 회피 불가
+        if (isJump || isDodge || isReload || isDead)
         {
             return;
         }
@@ -306,8 +321,8 @@ public class Player : MonoBehaviour
         if (sDown2 && (!hasWeapons[1] || equipWeaponIndex == 1)) return;
         if (sDown3 && (!hasWeapons[2] || equipWeaponIndex == 2)) return;
 
-        // 점프, 회피, 재장전 중에는 교체 불가
-        if (isJump || isDodge || isReload)
+        // 점프, 회피, 재장전 중, 사망 시 교체 불가
+        if (isJump || isDodge || isReload || isDead)
         {
             return;
         }
@@ -342,7 +357,8 @@ public class Player : MonoBehaviour
 
     private void Interaction()
     {
-        if (isJump || isDodge)
+        // 점프, 회피, 시망 시 상호작용 불가
+        if (isJump || isDodge || isDead)
         {
             return;
         }
@@ -363,7 +379,6 @@ public class Player : MonoBehaviour
             // 상점
             else if (nearObject.CompareTag("Shop"))
             {
-                Debug.Log("플레이어 상점 입장");
                 Shop shop = nearObject.GetComponent<Shop>();
                 shop.Enter(this);
                 isShop = true;
@@ -480,6 +495,13 @@ public class Player : MonoBehaviour
             rigid.AddForce(transform.forward * -25, ForceMode.Impulse);
         }
 
+        // 플레이어 체력 0 이하 사망 처리
+        if (health <= 0 && !isDead)
+        {
+            health = 0;
+            OnDie();
+        }
+
         yield return new WaitForSeconds(1f);
 
         foreach (MeshRenderer mesh in meshs)
@@ -492,6 +514,13 @@ public class Player : MonoBehaviour
         {
             rigid.velocity = Vector3.zero;
         }
+    }
+
+    private void OnDie()
+    {
+        anim.SetTrigger("doDie");
+        isDead = true;
+        manager.GameOver();
     }
 
     void OnTriggerStay(Collider other)

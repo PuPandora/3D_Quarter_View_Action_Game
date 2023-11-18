@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7474897820264153963}
   - component: {fileID: 9092003358969964103}
   - component: {fileID: 3095481099909001478}
-  m_Layer: 13
+  m_Layer: 15
   m_Name: Enemy Bullet
   m_TagString: EnemyBullet
   m_Icon: {fileID: 0}
@@ -68,6 +68,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   damage: 10
   isMelee: 1
+  isRock: 0
 --- !u!1 &2497174979960417990
 GameObject:
   m_ObjectHideFlags: 0
@@ -168,11 +169,18 @@ MonoBehaviour:
   enemyType: 0
   maxHealth: 50
   curHealth: 50
+  score: 100
+  manager: {fileID: 0}
   target: {fileID: 0}
   meleeArea: {fileID: 9092003358969964103}
   bullet: {fileID: 0}
+  coins:
+  - {fileID: 2702845363471444609, guid: 08ebcc0eba0a6a043ab6e9620e9c34ee, type: 3}
+  - {fileID: 4361104246134966964, guid: 4a37927fe7a0b324889b88eff91734d4, type: 3}
+  - {fileID: 3157622736506252400, guid: 97e4e0213a265874893fcfcadcabfb57, type: 3}
   isChase: 0
   isAttack: 0
+  isDead: 0
 --- !u!195 &941811180733243033
 NavMeshAgent:
   m_ObjectHideFlags: 0
